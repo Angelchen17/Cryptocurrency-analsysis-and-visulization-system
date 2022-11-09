@@ -1,0 +1,66 @@
+package CoinAnalysis_analysis;
+
+import CoinAnalysis_userSelection.userSelection;
+import CoinAnalysis_reader.*;
+
+/*
+ * Description: the unitPrice class implements the abstract class Analysis, and mainly
+ * implements the perform function to calculate the unit price since the selected 
+ * start date and for the frequency interval selected
+ * 
+ * @param None
+ * @return None
+ * */
+public class unitPrice implements Analysis{
+	/*
+	 * Description: The function perform of unitPrice class calculates the unit price, 
+	 * which is the division of total price value in one interval by the interval to get the result
+	 * 
+	 * @param userSelection: the user's selection in UI
+	 * @return return a 2nd dimensional double array contains the unit price of each interval
+	 * */
+	@Override
+	public double[][] perform(userSelection us) {
+		// TODO Auto-generated method stub
+		String interval = us.getInterval();
+		IdataFetcher fetcher = new dataFetcher();
+		double[][] dataList = fetcher.getPriceForCoin(us);
+		
+		if(interval == "Daily") {
+			return dataList;
+		} else {
+			int intervalIndex = 0;			// current week, month or year's index
+			int intervalLength = 0;			// the data length of one week, month or year 
+			double totalPrice = 0.0;		// the total price for one week, month or year
+			
+			if (interval == "Weekly") {
+				intervalLength = 7;			// one week is 7 days
+			}else if (interval == "Monthly") {
+				intervalLength = 30;		// assume one month is 30 days
+			}else if (interval == "Yearly") {
+				intervalLength = 365;		// assume one year is 365 days
+			}
+			double[][] newDataList = new double[dataList.length][];
+			for(int currencyIndex=0; currencyIndex<dataList.length; currencyIndex++) {
+				newDataList[currencyIndex] = new double[(int) Math.ceil(Double.valueOf(dataList[currencyIndex].length)/intervalLength)];
+				intervalIndex = newDataList[currencyIndex].length - 1;
+				
+				for(int dataIndex=dataList[currencyIndex].length-1; dataIndex>=0; dataIndex--) {
+					totalPrice += dataList[currencyIndex][dataIndex];
+					if(dataIndex != 0 && dataIndex % intervalLength == 0) {
+						// calculate the unit price for a whole week, month or year
+						newDataList[currencyIndex][intervalIndex] = totalPrice/intervalLength;
+						intervalIndex -= 1;
+						totalPrice = 0.0;
+					} else if(dataIndex == 0){
+						// if the final year is not a whole week, month or year, we also calculate the unit price
+						newDataList[currencyIndex][intervalIndex] = totalPrice/(dataList[currencyIndex].length%intervalLength);
+						intervalIndex -= 1;
+						totalPrice = 0.0;
+					}
+				}
+			}
+			return newDataList;
+		}
+	}
+}
